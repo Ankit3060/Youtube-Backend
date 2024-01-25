@@ -5,8 +5,6 @@ import { ApiError } from "../utils/ApiError.js";
 import { Video } from "../models/video.models.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
-import Jwt  from "jsonwebtoken";
 
 // Cloudinary public id
 // const findCloudinaryPublicId = (url) => {
@@ -227,10 +225,10 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   }
   video.isPublished = !video.isPublished
   const updatedVideo = await video.save()
-  return res.status(200).json(new ApiResponse(200, updatedVideo, "Video publish status updated successfully"))
+  return res
+  .status(200)
+  .json(new ApiResponse(200, updatedVideo, "Video publish status updated successfully"))
 })
-
-
 
 export {
   getAllVideos, 
