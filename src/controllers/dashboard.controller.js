@@ -1,11 +1,13 @@
 import mongoose from "mongoose"
+import {User} from "../models/user.models.js"
 import {Video} from "../models/video.models.js"
-import {Subscription} from "../models/subscription.model.js"
-import {Like} from "../models/like.model.js"
+import {Subscription} from "../models/subscription.models.js"
+import {Like} from "../models/like.models.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 
+//Here we are getting the channel stats
 // const getChannelStats = asyncHandler(async (req, res) => {
 
 //     const {channelId} = req.params
@@ -63,8 +65,13 @@ import {asyncHandler} from "../utils/asyncHandler.js"
 //     .json(new ApiResponse(200, "OK", {}))
 // })
 
+//This is the new way of getting the channel stats
 const getChannelStats = asyncHandler(async (req, res) => {
     const userId = req.user._id;
+    if(!mongoose.isValidObjectId(userId)){
+        throw new ApiError(400, "Invalid channel id")
+    }
+
     const channelStats = await User.aggregate([
         {
             $match:{
@@ -101,7 +108,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
                 totalSubscribers:{$size:"$subscribers"},
                 totalVideos:{$size:"$videos"},
                 totalLikes:{$size:"$likes"},
-                totalViews:{$sum:"$videos.views"}
+                // totalViews:{$sum:"$videos.views"}
             }
         },
     ])
@@ -110,6 +117,32 @@ const getChannelStats = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "OK", channelStats[0]))
 })
 
+//Here we are getting the channel videos
+const getChannelVideos = asyncHandler(async (req, res) => {
+    const {channelId} = req.params?._id
+
+    if(!mongoose.isValidObjectId(channelId)){
+        throw new ApiError(400, "Invalid channel id")
+    }
+
+    const { page = 1, limit = 10 } = req.query;
+    const parsedLimit = parseInt(limit);
+    const pageSkip = (page - 1) * parsedLimit;
+
+    const videos = await Video.find({ channel: channelId })
+      .skip(pageSkip)
+      .limit(parsedLimit)
+      .populate("channel", "name")
+    //   .populate("comments.user", "name")
+      .sort("-createdAt");
+
+      return res
+      .status(200)
+      .json(new ApiResponse(200, videos, "videos fetched successfully"));
+})
+
+
 export {
-    getChannelStats
+    getChannelStats,
+    getChannelVideos
 }
